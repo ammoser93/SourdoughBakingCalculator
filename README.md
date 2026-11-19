@@ -2,6 +2,8 @@
 
 A clean, static multi-page sourdough baker's percentage calculator and recipe library built for **GitHub Pages** (and structured to plug into Firebase later).
 
+https://ammoser93.github.io/SourdoughBakingCalculator/
+
 ## Project Structure
 
 ```text
