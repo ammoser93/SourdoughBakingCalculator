@@ -34,6 +34,7 @@
           Saved Recipes
           <span class="nav-count" id="navRecipeCount">0</span>
         </a>
+        <div id="authControls" class="nav-auth"></div>
       </div>
     </div>
   </nav>
@@ -109,10 +110,14 @@
     </section>
 
     <footer class="app-footer">
-      <span>Saved in your browser (seeded from <code>data/recipes.json</code>) &middot; Click any recipe to open it in the <a href="../index.html">Calculator</a>.</span>
+      <span>Sign in with Google to sync your Family Recipe Book across devices &middot; Click any recipe to open it in the <a href="../index.html">Calculator</a>.</span>
     </footer>
   </div>
 
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <script src="../js/firebase-config.js"></script>
   <script src="../js/storage.js"></script>
   <script src="../js/recipes-page.js"></script>
 </body>

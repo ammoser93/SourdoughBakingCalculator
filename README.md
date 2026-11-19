@@ -1,8 +1,6 @@
 # Sourdough Baking Calculator
 
-A clean, static multi-page sourdough baker's percentage calculator and recipe library built for **GitHub Pages** (and structured to plug into Firebase later).
-
-https://ammoser93.github.io/SourdoughBakingCalculator/
+A static multi-page sourdough baker's percentage calculator and shared family recipe book hosted on **GitHub Pages** and synced via **Firebase Firestore + Google Sign-In**.
 
 ## Project Structure
 
@@ -16,11 +14,12 @@ SourdoughBakingCalculator/
 ├── css/
 │   └── styles.css           # Shared styles
 ├── js/
-│   ├── storage.js           # Data & persistence layer (ready for Firebase)
+│   ├── firebase-config.js   # Public Firebase Web App config
+│   ├── storage.js           # Firebase Auth + Firestore live sync + local fallback
 │   ├── app.js               # Calculator page logic
 │   └── recipes-page.js      # Saved Recipes page logic
 ├── data/
-│   └── recipes.json         # Default / seed recipes JSON
+│   └── recipes.json         # Default / starter seed recipes
 └── assets/
     └── icons/               # App & favicon icons
 ```
@@ -32,12 +31,38 @@ SourdoughBakingCalculator/
   - Dynamic **Flours** (primary flour auto-balances to `100%`) and **Inclusions**, plus quick `×½` / `×2` scaling and baking notes.
   - **Open Saved Recipe** dropdown and **Save Recipe / Save Changes / Save as New** controls.
 - **Saved Recipes (`pages/recipes.html`):**
-  - Scannable recipe cards showing flour weight, hydration %, starter %, total dough weight, full ingredient breakdowns, and notes.
+  - Live-synced family recipe cards showing flour weight, hydration %, starter %, total dough weight, ingredient breakdowns, and notes.
   - Search, sort, **Open in Calculator**, copy, duplicate, delete, **View JSON**, and **Import / Export `recipes.json`**.
+- **Shared Family Sync (Firebase):**
+  - Sign in with Google to sync recipes in real time across phones and computers.
+  - Automatically seeds your Firestore database from `data/recipes.json` on first sign-in.
+  - Works offline / signed-out using local browser storage (`localStorage`).
 
-## Deploying to GitHub Pages
+## Firebase Firestore Rules (Family Allowlist)
 
-1. Commit and push all files in this repo to GitHub (`main`).
-2. In your GitHub repo, open **Settings → Pages**.
-3. Under **Build and deployment**, select **Deploy from a branch**, choose `main` and `/ (root)`, and click **Save**.
-4. Your site will be live at `https://<your-username>.github.io/<repo-name>/`.
+Paste these rules into **Firebase Console → Firestore Database → Rules** and add your family email addresses (all lowercase):
+
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isFamily() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email.lower() in [
+          'your-email@gmail.com'
+        ];
+    }
+
+    match /recipes/{recipeId} {
+      allow read, write: if isFamily();
+    }
+
+    match /meta/{docId} {
+      allow read, write: if isFamily();
+    }
+  }
+}
+```
+
+Also ensure `ammoser93.github.io` is added under **Firebase Console → Authentication → Settings → Authorized domains**.
