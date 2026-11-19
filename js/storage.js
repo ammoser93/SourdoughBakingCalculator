@@ -4,6 +4,10 @@
   const COLLECTION_KEY = 'sourdoughRecipesCollection_v1';
   const DRAFT_KEY = 'sourdoughCalcDraft_v1';
   const CORE_ORDER = ['water', 'salt', 'starter'];
+  const SEED_JSON_URL =
+    document.currentScript && document.currentScript.src
+      ? new URL('../data/recipes.json', document.currentScript.src).href
+      : './data/recipes.json';
 
   let cachedRecipes = [];
 
@@ -322,7 +326,7 @@
       return null;
     }
     try {
-      const res = await fetch('./recipes/recipes.json', { cache: 'no-store' });
+      const res = await fetch(SEED_JSON_URL, { cache: 'no-store' });
       if (!res.ok) return null;
       const data = await res.json();
       const list = Array.isArray(data) ? data : data && data.recipes;

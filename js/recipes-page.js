@@ -222,7 +222,7 @@
     footer.className = 'recipe-card-footer';
 
     const openLink = document.createElement('a');
-    openLink.href = `index.html?recipe=${encodeURIComponent(recipe.id)}`;
+    openLink.href = `../index.html?recipe=${encodeURIComponent(recipe.id)}`;
     openLink.className = 'btn btn-primary btn-sm';
     openLink.textContent = 'Open in Calculator';
 
