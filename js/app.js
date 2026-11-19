@@ -16,7 +16,6 @@
   // DOM References
   const dom = {
     navRecipeCount: document.getElementById('navRecipeCount'),
-    phoneAccessBtn: document.getElementById('phoneAccessBtn'),
     storageStatus: document.getElementById('storageStatus'),
     openRecipeSelect: document.getElementById('openRecipeSelect'),
     recipeNameInput: document.getElementById('recipeNameInput'),
@@ -523,11 +522,7 @@
       updateRecipeBarControls();
       persistDraft();
 
-      const dest =
-        Store.getMode() === 'server'
-          ? 'recipes/recipes.json'
-          : 'browser storage (use Export JSON on Saved Recipes to write a file)';
-      showFeedback(`Saved "${saved.name}" to ${dest}.`, 'success');
+      showFeedback(`Saved "${saved.name}".`, 'success');
     } catch (err) {
       showFeedback(err.message || 'Could not save recipe.', 'error');
     }
@@ -730,7 +725,6 @@
 
     renderAll();
     updateRecipeBarControls();
-    Store.setupPhoneAccess(dom.phoneAccessBtn);
   }
 
   boot();

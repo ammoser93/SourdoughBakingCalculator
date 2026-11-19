@@ -13,7 +13,6 @@
 
   const dom = {
     navRecipeCount: document.getElementById('navRecipeCount'),
-    phoneAccessBtn: document.getElementById('phoneAccessBtn'),
     storageStatus: document.getElementById('storageStatus'),
     toggleJsonBtn: document.getElementById('toggleJsonBtn'),
     importJsonBtn: document.getElementById('importJsonBtn'),
@@ -223,7 +222,7 @@
     footer.className = 'recipe-card-footer';
 
     const openLink = document.createElement('a');
-    openLink.href = `index.html?recipe=${encodeURIComponent(recipe.id)}`;
+    openLink.href = `../index.html?recipe=${encodeURIComponent(recipe.id)}`;
     openLink.className = 'btn btn-primary btn-sm';
     openLink.textContent = 'Open in Calculator';
 
@@ -399,7 +398,6 @@
   async function boot() {
     await Store.init();
     renderLibrary();
-    Store.setupPhoneAccess(dom.phoneAccessBtn);
   }
 
   boot();

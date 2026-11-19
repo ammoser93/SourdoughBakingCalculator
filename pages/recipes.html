@@ -4,20 +4,20 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Saved Recipes · Sourdough Baking Calculator</title>
-  <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
-  <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png" />
+  <link rel="manifest" href="../manifest.webmanifest" />
+  <link rel="icon" href="../assets/icons/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" sizes="192x192" href="../assets/icons/icon-192.png" />
   <meta name="theme-color" content="#b35633" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Sourdough" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="../css/styles.css" />
 </head>
 <body>
   <!-- Shared Site Navigation -->
   <nav class="site-nav" aria-label="Primary navigation">
     <div class="site-nav-inner">
-      <a href="index.html" class="brand">
+      <a href="../index.html" class="brand">
         <div class="brand-mark" aria-hidden="true">
           <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M5 20.5C5 13.5 10 8.5 16 8.5C22 8.5 27 13.5 27 20.5C27 22.985 24.985 24.5 22.5 24.5H9.5C7.015 24.5 5 22.985 5 20.5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -29,18 +29,11 @@
       </a>
 
       <div class="nav-links">
-        <a href="index.html" class="nav-link">Calculator</a>
+        <a href="../index.html" class="nav-link">Calculator</a>
         <a href="recipes.html" class="nav-link is-active" aria-current="page">
           Saved Recipes
           <span class="nav-count" id="navRecipeCount">0</span>
         </a>
-        <button type="button" id="phoneAccessBtn" class="nav-phone-btn" hidden title="Open on your phone over Wi-Fi">
-          <svg class="btn-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-            <rect x="6" y="2.5" width="8" height="15" rx="1.8" stroke="currentColor" stroke-width="1.6"/>
-            <circle cx="10" cy="14.6" r="0.8" fill="currentColor"/>
-          </svg>
-          <span>Phone</span>
-        </button>
       </div>
     </div>
   </nav>
@@ -57,7 +50,7 @@
         <button type="button" id="importJsonBtn" class="btn btn-secondary">Import JSON</button>
         <input type="file" id="importFileInput" accept=".json,application/json" hidden />
         <button type="button" id="exportJsonBtn" class="btn btn-secondary">Export JSON</button>
-        <a href="index.html?new=1" class="btn btn-primary">+ New Recipe</a>
+        <a href="../index.html?new=1" class="btn btn-primary">+ New Recipe</a>
       </div>
     </header>
 
@@ -67,7 +60,7 @@
     <section id="rawJsonPanel" class="json-panel" aria-label="Raw recipes.json viewer" hidden>
       <div class="json-panel-header">
         <div>
-          <h2 class="json-panel-title">recipes/recipes.json</h2>
+          <h2 class="json-panel-title">data/recipes.json</h2>
           <p class="json-panel-sub">Formatted preview of your saved recipes file</p>
         </div>
         <div class="json-panel-actions">
@@ -112,16 +105,15 @@
     <section id="emptyState" class="empty-card" hidden>
       <h2 id="emptyTitle">No saved recipes yet</h2>
       <p id="emptyMessage">Save a recipe from the calculator and it will appear here automatically.</p>
-      <a href="index.html" class="btn btn-primary">Go to Calculator</a>
+      <a href="../index.html" class="btn btn-primary">Go to Calculator</a>
     </section>
 
     <footer class="app-footer">
-      <span>Stored locally in <code>recipes/recipes.json</code> &middot; Click any recipe to open and adjust it in the <a href="index.html">Calculator</a>.</span>
+      <span>Saved in your browser (seeded from <code>data/recipes.json</code>) &middot; Click any recipe to open it in the <a href="../index.html">Calculator</a>.</span>
     </footer>
   </div>
 
-  <script src="qrcode.js"></script>
-  <script src="storage.js"></script>
-  <script src="recipes-page.js"></script>
+  <script src="../js/storage.js"></script>
+  <script src="../js/recipes-page.js"></script>
 </body>
 </html>

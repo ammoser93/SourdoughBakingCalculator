@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Calculator · Sourdough Baking Calculator</title>
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
-  <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png" />
+  <link rel="icon" href="assets/icons/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" sizes="192x192" href="assets/icons/icon-192.png" />
   <meta name="theme-color" content="#b35633" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Sourdough" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
   <!-- Shared Site Navigation -->
@@ -30,17 +30,10 @@
 
       <div class="nav-links">
         <a href="index.html" class="nav-link is-active" aria-current="page">Calculator</a>
-        <a href="recipes.html" class="nav-link">
+        <a href="pages/recipes.html" class="nav-link">
           Saved Recipes
           <span class="nav-count" id="navRecipeCount">0</span>
         </a>
-        <button type="button" id="phoneAccessBtn" class="nav-phone-btn" hidden title="Open on your phone over Wi-Fi">
-          <svg class="btn-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-            <rect x="6" y="2.5" width="8" height="15" rx="1.8" stroke="currentColor" stroke-width="1.6"/>
-            <circle cx="10" cy="14.6" r="0.8" fill="currentColor"/>
-          </svg>
-          <span>Phone</span>
-        </button>
       </div>
     </div>
   </nav>
@@ -221,12 +214,11 @@
     </section>
 
     <footer class="app-footer">
-      <span>Edit any <strong>%</strong> or <strong>g</strong> field &middot; Save recipes to <code>recipes/recipes.json</code> and browse them on <a href="recipes.html">Saved Recipes</a>.</span>
+      <span>Edit any <strong>%</strong> or <strong>g</strong> field &middot; Save recipes in your browser and manage or export <code>recipes.json</code> on <a href="pages/recipes.html">Saved Recipes</a>.</span>
     </footer>
   </div>
 
-  <script src="qrcode.js"></script>
-  <script src="storage.js"></script>
-  <script src="app.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>
