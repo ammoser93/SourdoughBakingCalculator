@@ -13,7 +13,6 @@
 
   const dom = {
     navRecipeCount: document.getElementById('navRecipeCount'),
-    phoneAccessBtn: document.getElementById('phoneAccessBtn'),
     storageStatus: document.getElementById('storageStatus'),
     toggleJsonBtn: document.getElementById('toggleJsonBtn'),
     importJsonBtn: document.getElementById('importJsonBtn'),
@@ -399,7 +398,6 @@
   async function boot() {
     await Store.init();
     renderLibrary();
-    Store.setupPhoneAccess(dom.phoneAccessBtn);
   }
 
   boot();

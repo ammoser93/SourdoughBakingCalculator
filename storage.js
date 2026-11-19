@@ -5,9 +5,7 @@
   const DRAFT_KEY = 'sourdoughCalcDraft_v1';
   const CORE_ORDER = ['water', 'salt', 'starter'];
 
-  let storageMode = 'browser'; // 'server' | 'browser'
   let cachedRecipes = [];
-  let cachedLanUrls = [];
 
   function makeId(prefix) {
     return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
@@ -57,7 +55,7 @@
     };
   }
 
-  function createSeedRecipes() {
+  function createFallbackSeedRecipes() {
     return [
       {
         id: 'rec-everyday-honey-avocado',
@@ -319,80 +317,39 @@
     }
   }
 
-  async function detectServer() {
+  async function fetchStaticRecipesJson() {
     if (window.location.protocol !== 'http:' && window.location.protocol !== 'https:') {
-      return false;
+      return null;
     }
     try {
-      const res = await fetch('/api/health', { cache: 'no-store' });
-      if (!res.ok) return false;
+      const res = await fetch('./recipes/recipes.json', { cache: 'no-store' });
+      if (!res.ok) return null;
       const data = await res.json();
-      if (data && Array.isArray(data.lanUrls)) {
-        cachedLanUrls = data.lanUrls.filter((u) => typeof u === 'string' && u.trim());
-      } else if (data && typeof data.lanUrls === 'string' && data.lanUrls.trim()) {
-        // PowerShell ConvertTo-Json turns 1-element arrays into a string unless wrapped
-        cachedLanUrls = [data.lanUrls.trim()];
-      } else {
-        cachedLanUrls = [];
-      }
-      return Boolean(data && data.ok);
+      const list = Array.isArray(data) ? data : data && data.recipes;
+      if (!Array.isArray(list)) return null;
+      return list.map(sanitizeRecipe);
     } catch {
-      cachedLanUrls = [];
-      return false;
+      return null;
     }
   }
 
   async function init() {
-    const serverAvailable = await detectServer();
-    if (serverAvailable) {
-      storageMode = 'server';
-      try {
-        const res = await fetch('/api/recipes', { cache: 'no-store' });
-        if (res.ok) {
-          const data = await res.json();
-          const list = Array.isArray(data) ? data : data && data.recipes;
-          cachedRecipes = Array.isArray(list) ? list.map(sanitizeRecipe) : [];
-          writeLocalCollection(cachedRecipes);
-          return { mode: storageMode, recipes: getRecipes() };
-        }
-      } catch {
-        storageMode = 'browser';
-      }
-    }
-
-    storageMode = 'browser';
     const local = readLocalCollection();
     if (local) {
       cachedRecipes = local;
-    } else {
-      cachedRecipes = createSeedRecipes().map(sanitizeRecipe);
-      writeLocalCollection(cachedRecipes);
+      return { recipes: getRecipes() };
     }
-    return { mode: storageMode, recipes: getRecipes() };
+
+    // First visit: seed from static recipes/recipes.json (on GitHub Pages),
+    // falling back to embedded defaults if opened via file://
+    const seeded = await fetchStaticRecipesJson();
+    cachedRecipes = seeded || createFallbackSeedRecipes().map(sanitizeRecipe);
+    writeLocalCollection(cachedRecipes);
+    return { recipes: getRecipes() };
   }
 
   async function persistCollection() {
     writeLocalCollection(cachedRecipes);
-
-    if (storageMode === 'server') {
-      const body = exportCollectionJson(cachedRecipes);
-      const res = await fetch('/api/recipes', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body
-      });
-      if (!res.ok) {
-        throw new Error('Failed to write recipes/recipes.json on local server.');
-      }
-    }
-  }
-
-  function getMode() {
-    return storageMode;
-  }
-
-  function getLanUrls() {
-    return cachedLanUrls.slice();
   }
 
   function getRecipes() {
@@ -544,158 +501,9 @@
       countEl.textContent = String(cachedRecipes.length);
     }
     if (!badgeEl) return;
-    if (storageMode === 'server') {
-      badgeEl.className = 'storage-status is-live';
-      badgeEl.innerHTML =
-        '<span class="status-dot" aria-hidden="true"></span><span>Synced to <code>recipes/recipes.json</code> on this PC</span>';
-    } else {
-      badgeEl.className = 'storage-status is-local';
-      badgeEl.innerHTML =
-        '<span class="status-dot" aria-hidden="true"></span><span>Browser mode &middot; Run <code>start.bat</code> for PC &amp; phone sync</span>';
-    }
-  }
-
-  function setupPhoneAccess(triggerBtn) {
-    if (!triggerBtn) return;
-    if (storageMode !== 'server' || cachedLanUrls.length === 0) {
-      triggerBtn.hidden = true;
-      return;
-    }
-
-    triggerBtn.hidden = false;
-    if (triggerBtn.dataset.phoneWired === '1') return;
-    triggerBtn.dataset.phoneWired = '1';
-
-    let backdrop = document.getElementById('phoneModalBackdrop');
-    if (!backdrop) {
-      backdrop = document.createElement('div');
-      backdrop.id = 'phoneModalBackdrop';
-      backdrop.className = 'modal-backdrop';
-      backdrop.hidden = true;
-      backdrop.innerHTML = `
-        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="phoneModalTitle">
-          <div class="modal-header">
-            <div>
-              <h2 id="phoneModalTitle" class="modal-title">Open on Your Phone</h2>
-              <p class="modal-sub">Connect to the same Wi-Fi — saves directly to <code>recipes/recipes.json</code> on this PC.</p>
-            </div>
-            <button type="button" class="btn-remove modal-close" id="phoneModalClose" aria-label="Close">&times;</button>
-          </div>
-          <div class="modal-body">
-            <div class="qr-frame">
-              <canvas id="phoneQrCanvas" width="220" height="220" aria-label="QR code to open calculator on phone"></canvas>
-            </div>
-            <div id="phoneUrlTabs" class="url-tabs" hidden></div>
-            <div class="url-copy-row">
-              <input type="text" id="phoneUrlInput" class="text-input url-readonly" readonly />
-              <button type="button" id="phoneUrlCopyBtn" class="btn btn-secondary">Copy</button>
-            </div>
-            <div class="phone-tips">
-              <p><strong>Add to Home Screen like an app:</strong></p>
-              <ul>
-                <li><strong>iPhone (Safari):</strong> Tap <em>Share</em> &rarr; <em>Add to Home Screen</em>.</li>
-                <li><strong>Android (Chrome):</strong> Tap <em>Menu (&vellip;)</em> &rarr; <em>Add to Home screen</em>.</li>
-              </ul>
-              <p class="phone-tip-note">Tip: If it won't load on your phone, allow <strong>Private networks</strong> in Windows Firewall when prompted, and keep <code>start.bat</code> open on this PC.</p>
-            </div>
-          </div>
-        </div>
-      `;
-      document.body.appendChild(backdrop);
-    }
-
-    const closeBtn = backdrop.querySelector('#phoneModalClose');
-    const canvas = backdrop.querySelector('#phoneQrCanvas');
-    const tabsEl = backdrop.querySelector('#phoneUrlTabs');
-    const urlInput = backdrop.querySelector('#phoneUrlInput');
-    const copyBtn = backdrop.querySelector('#phoneUrlCopyBtn');
-
-    let selectedIdx = 0;
-
-    function labelForUrl(url) {
-      return url.includes('.local:') ? 'Hostname (.local)' : 'Wi-Fi IP';
-    }
-
-    function renderSelectedUrl() {
-      const urls = getLanUrls();
-      if (!urls.length) return;
-      if (selectedIdx >= urls.length) selectedIdx = 0;
-      const current = urls[selectedIdx];
-      urlInput.value = current;
-
-      if (window.SimpleQR && typeof window.SimpleQR.renderToCanvas === 'function') {
-        try {
-          window.SimpleQR.renderToCanvas(canvas, current, { pixelSize: 220 });
-        } catch {
-          // Ignore render error
-        }
-      }
-
-      if (urls.length > 1) {
-        tabsEl.hidden = false;
-        tabsEl.innerHTML = '';
-        urls.forEach((u, i) => {
-          const tab = document.createElement('button');
-          tab.type = 'button';
-          tab.className = 'url-tab' + (i === selectedIdx ? ' is-active' : '');
-          tab.textContent = labelForUrl(u);
-          tab.addEventListener('click', () => {
-            selectedIdx = i;
-            renderSelectedUrl();
-          });
-          tabsEl.appendChild(tab);
-        });
-      } else {
-        tabsEl.hidden = true;
-      }
-    }
-
-    function openModal() {
-      renderSelectedUrl();
-      backdrop.hidden = false;
-      document.body.classList.add('modal-open');
-    }
-
-    function closeModal() {
-      backdrop.hidden = true;
-      document.body.classList.remove('modal-open');
-    }
-
-    triggerBtn.addEventListener('click', openModal);
-    closeBtn.addEventListener('click', closeModal);
-    backdrop.addEventListener('click', (e) => {
-      if (e.target === backdrop) closeModal();
-    });
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && !backdrop.hidden) closeModal();
-    });
-
-    copyBtn.addEventListener('click', async () => {
-      const val = urlInput.value;
-      let ok = false;
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        try {
-          await navigator.clipboard.writeText(val);
-          ok = true;
-        } catch {
-          ok = false;
-        }
-      }
-      if (!ok) {
-        urlInput.select();
-        try {
-          ok = document.execCommand('copy');
-        } catch {
-          ok = false;
-        }
-      }
-      if (ok) {
-        copyBtn.textContent = 'Copied!';
-        setTimeout(() => {
-          copyBtn.textContent = 'Copy';
-        }, 1500);
-      }
-    });
+    badgeEl.className = 'storage-status is-live';
+    badgeEl.innerHTML =
+      '<span class="status-dot" aria-hidden="true"></span><span>Saved locally in this browser &middot; Export JSON anytime</span>';
   }
 
   window.SourdoughStore = {
@@ -716,8 +524,6 @@
     buildRecipeSummaryText,
     exportCollectionJson,
     init,
-    getMode,
-    getLanUrls,
     getRecipes,
     getRecipeById,
     saveRecipe,
@@ -727,7 +533,6 @@
     downloadCollectionJson,
     loadDraft,
     saveDraft,
-    renderNavStatus,
-    setupPhoneAccess
+    renderNavStatus
   };
 })();

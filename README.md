@@ -1,31 +1,27 @@
 # Sourdough Baking Calculator
 
-A 100% local, multi-page sourdough calculator website with JSON recipe storage and home Wi-Fi phone access. No installs or external dependencies required.
+A clean, static multi-page sourdough baker's percentage calculator and recipe library built for **GitHub Pages** (and ready to wire up to Firebase later).
 
-## Quick Start
-
-Double-click **`start.bat`** to start the local server and open the website in your browser (`http://localhost:8765`).
-
-- Reads and saves recipes directly to **`recipes/recipes.json`** in this folder.
-- Keep the terminal window open while using the calculator on your PC or phone.
-
-## Open on Your Phone (Same Wi-Fi)
-
-1. Start **`start.bat`** on your PC. *(If Windows Firewall prompts, allow **Private networks** only — not Public networks.)*
-2. Click the **Phone** button in the top navigation bar (or check the Wi-Fi URL printed in the terminal window) and scan the QR code with your phone camera.
-3. Any recipe you save or edit on your phone writes directly to **`recipes/recipes.json`** on your computer.
-
-### Install as a Home Screen App
-- **iPhone (Safari):** Tap **Share** → **Add to Home Screen**.
-- **Android (Chrome):** Tap **Menu (⋮)** → **Add to Home screen**.
-- **Tip:** Switch to the **Hostname (`.local`)** tab in the Phone QR modal (or reserve your PC's local IP in your router) so your Home Screen shortcut keeps working even if your IP changes.
-
-## Pages
+## Features
 
 - **Calculator (`index.html`):**
-  - Open any saved recipe from the dropdown or save/update named recipes directly to `recipes/recipes.json`.
   - Bidirectional editing across **Total Flour (g)**, **Baker's (%)**, **Weight (g)**, and **Total Weight (g)**.
   - Dynamic **Flours** (primary flour auto-balances to `100%`) and **Inclusions**, plus quick `×½` / `×2` scaling and baking notes.
+  - **Open Saved Recipe** dropdown and **Save Recipe / Save Changes / Save as New** controls.
 - **Saved Recipes (`recipes.html`):**
-  - Browse all recipes stored in `recipes/recipes.json` as scannable cards with hydration, starter %, total dough weight, ingredient breakdowns, and notes.
-  - Search, sort, **Open in Calculator**, duplicate, delete, import/export JSON, or toggle the **View JSON** panel.
+  - Scannable recipe cards showing flour weight, hydration %, starter %, total dough weight, full ingredient breakdowns, and notes.
+  - Search, sort, **Open in Calculator**, copy, duplicate, delete, **View JSON**, and **Import / Export `recipes.json`**.
+- **Installable on Phone:** Includes `manifest.webmanifest` and app icons so you can **Add to Home Screen** from Safari or Chrome.
+
+## Storage (Current Setup)
+
+- On first visit on GitHub Pages, the app seeds your recipe list from `recipes/recipes.json`.
+- Changes you make are saved locally in your browser (`localStorage`), with **Import JSON** and **Export JSON** available on the **Saved Recipes** page.
+- All persistence lives in `storage.js`, making it straightforward to connect Firebase Firestore for cross-device sync next.
+
+## Deploying to GitHub Pages
+
+1. Commit and push all files in this repo to GitHub.
+2. Open your repository on GitHub and go to **Settings → Pages**.
+3. Under **Build and deployment**, select **Deploy from a branch**, pick `main` and `/ (root)`, and click **Save**.
+4. After ~1 minute, your site will be live at `https://<your-username>.github.io/<repo-name>/`.
