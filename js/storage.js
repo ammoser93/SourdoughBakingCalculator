@@ -10,6 +10,15 @@
       : './data/recipes.json';
 
   let cachedRecipes = [];
+  let firebaseEnabled = false;
+  let auth = null;
+  let db = null;
+  let currentUser = null;
+  let syncState = 'local'; // 'local' | 'connecting' | 'synced' | 'denied' | 'error'
+  let syncMessage = '';
+  let unsubscribeRecipes = null;
+  let seedingInProgress = false;
+  const listeners = new Set();
 
   function makeId(prefix) {
     return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
@@ -321,6 +330,27 @@
     }
   }
 
+  function notifyListeners() {
+    const snapshot = {
+      recipes: getRecipes(),
+      user: getUser(),
+      syncState,
+      syncMessage
+    };
+    listeners.forEach((fn) => {
+      try {
+        fn(snapshot);
+      } catch {
+        // Isolate subscriber errors
+      }
+    });
+  }
+
+  function onChange(fn) {
+    listeners.add(fn);
+    return () => listeners.delete(fn);
+  }
+
   async function fetchStaticRecipesJson() {
     if (window.location.protocol !== 'http:' && window.location.protocol !== 'https:') {
       return null;
@@ -337,23 +367,229 @@
     }
   }
 
-  async function init() {
+  async function loadLocalFallbackRecipes() {
     const local = readLocalCollection();
     if (local) {
       cachedRecipes = local;
-      return { recipes: getRecipes() };
+      return;
     }
-
-    // First visit: seed from static recipes/recipes.json (on GitHub Pages),
-    // falling back to embedded defaults if opened via file://
     const seeded = await fetchStaticRecipesJson();
     cachedRecipes = seeded || createFallbackSeedRecipes().map(sanitizeRecipe);
     writeLocalCollection(cachedRecipes);
-    return { recipes: getRecipes() };
   }
 
-  async function persistCollection() {
-    writeLocalCollection(cachedRecipes);
+  function isCloudWritable() {
+    return Boolean(firebaseEnabled && db && currentUser && syncState === 'synced');
+  }
+
+  function stopFirestoreSubscription() {
+    if (unsubscribeRecipes) {
+      try {
+        unsubscribeRecipes();
+      } catch {
+        // Ignore
+      }
+      unsubscribeRecipes = null;
+    }
+  }
+
+  async function seedFirestoreOnceIfNeeded() {
+    if (!db || !currentUser || seedingInProgress) return;
+    seedingInProgress = true;
+    try {
+      const metaRef = db.collection('meta').doc('init');
+      const metaSnap = await metaRef.get();
+      if (metaSnap.exists) return;
+
+      const seedList =
+        (await fetchStaticRecipesJson()) ||
+        readLocalCollection() ||
+        createFallbackSeedRecipes().map(sanitizeRecipe);
+
+      const batch = db.batch();
+      seedList.forEach((rec) => {
+        const clean = sanitizeRecipe(rec);
+        batch.set(db.collection('recipes').doc(clean.id), clean);
+      });
+      batch.set(metaRef, {
+        seeded: true,
+        seededAt: new Date().toISOString(),
+        seededBy: currentUser.email || ''
+      });
+      await batch.commit();
+    } catch {
+      // If rules reject or offline, ignore cleanly
+    } finally {
+      seedingInProgress = false;
+    }
+  }
+
+  function startFirestoreSubscription(resolveInitial) {
+    stopFirestoreSubscription();
+    if (!db || !currentUser) {
+      if (resolveInitial) resolveInitial();
+      return;
+    }
+
+    syncState = 'connecting';
+    syncMessage = 'Connecting to family recipe book...';
+    notifyListeners();
+
+    let resolved = false;
+    const finishInit = () => {
+      if (!resolved && resolveInitial) {
+        resolved = true;
+        resolveInitial();
+      }
+    };
+
+    unsubscribeRecipes = db.collection('recipes').onSnapshot(
+      async (snapshot) => {
+        const docs = [];
+        snapshot.forEach((doc) => {
+          docs.push(sanitizeRecipe({ id: doc.id, ...doc.data() }));
+        });
+        docs.sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
+
+        syncState = 'synced';
+        syncMessage = '';
+
+        if (docs.length === 0) {
+          await seedFirestoreOnceIfNeeded();
+        } else {
+          cachedRecipes = docs;
+          writeLocalCollection(cachedRecipes);
+        }
+
+        notifyListeners();
+        finishInit();
+      },
+      (err) => {
+        stopFirestoreSubscription();
+        if (err && err.code === 'permission-denied') {
+          syncState = 'denied';
+          syncMessage = `${currentUser.email} is not on the family allowlist yet.`;
+        } else {
+          syncState = 'error';
+          syncMessage = 'Offline or unable to reach Firebase. Using local cache.';
+        }
+        notifyListeners();
+        finishInit();
+      }
+    );
+  }
+
+  function setupFirebase() {
+    const isHttp =
+      window.location.protocol === 'http:' || window.location.protocol === 'https:';
+    if (!isHttp) return false;
+    if (typeof window.firebase === 'undefined' || !window.FIREBASE_CONFIG) return false;
+
+    try {
+      if (!window.firebase.apps.length) {
+        window.firebase.initializeApp(window.FIREBASE_CONFIG);
+      }
+      auth = window.firebase.auth();
+      db = window.firebase.firestore();
+      firebaseEnabled = true;
+
+      // Finish any redirect-based sign-in gracefully
+      auth.getRedirectResult().catch(() => {});
+      return true;
+    } catch {
+      firebaseEnabled = false;
+      return false;
+    }
+  }
+
+  async function init() {
+    await loadLocalFallbackRecipes();
+
+    if (!setupFirebase()) {
+      syncState = 'local';
+      notifyListeners();
+      return { recipes: getRecipes(), user: null, syncState };
+    }
+
+    await new Promise((resolve) => {
+      let settled = false;
+      const done = () => {
+        if (!settled) {
+          settled = true;
+          resolve();
+        }
+      };
+
+      const timeout = setTimeout(done, 2800);
+
+      auth.onAuthStateChanged((user) => {
+        currentUser = user || null;
+        if (currentUser) {
+          startFirestoreSubscription(() => {
+            clearTimeout(timeout);
+            done();
+          });
+        } else {
+          stopFirestoreSubscription();
+          syncState = 'local';
+          syncMessage = '';
+          loadLocalFallbackRecipes().then(() => {
+            notifyListeners();
+            clearTimeout(timeout);
+            done();
+          });
+        }
+      });
+    });
+
+    return { recipes: getRecipes(), user: getUser(), syncState };
+  }
+
+  async function signInWithGoogle() {
+    if (!firebaseEnabled || !auth) {
+      throw new Error('Firebase sign-in requires opening this site over HTTPS (e.g. GitHub Pages).');
+    }
+    const provider = new window.firebase.auth.GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    try {
+      await auth.signInWithPopup(provider);
+    } catch (err) {
+      if (
+        err &&
+        (err.code === 'auth/popup-blocked' ||
+          err.code === 'auth/operation-not-supported-in-this-environment')
+      ) {
+        await auth.signInWithRedirect(provider);
+      } else if (err && err.code === 'auth/popup-closed-by-user') {
+        return;
+      } else {
+        throw err;
+      }
+    }
+  }
+
+  async function signOut() {
+    if (!auth) return;
+    stopFirestoreSubscription();
+    await auth.signOut();
+  }
+
+  function getUser() {
+    if (!currentUser) return null;
+    return {
+      uid: currentUser.uid,
+      email: currentUser.email || '',
+      displayName: currentUser.displayName || currentUser.email || ''
+    };
+  }
+
+  function getSyncStatus() {
+    return {
+      firebaseEnabled,
+      syncState,
+      syncMessage,
+      isCloudWritable: isCloudWritable()
+    };
   }
 
   function getRecipes() {
@@ -403,13 +639,27 @@
       cachedRecipes.unshift(saved);
     }
 
-    await persistCollection();
+    writeLocalCollection(cachedRecipes);
+
+    if (isCloudWritable()) {
+      await db.collection('recipes').doc(saved.id).set(saved);
+    } else {
+      notifyListeners();
+    }
+
     return clone(saved);
   }
 
   async function deleteRecipe(id) {
     cachedRecipes = cachedRecipes.filter((r) => r.id !== id);
-    await persistCollection();
+    writeLocalCollection(cachedRecipes);
+
+    if (isCloudWritable()) {
+      await db.collection('recipes').doc(id).delete();
+    } else {
+      notifyListeners();
+    }
+
     return getRecipes();
   }
 
@@ -424,7 +674,14 @@
       updatedAt: new Date().toISOString()
     });
     cachedRecipes.unshift(copy);
-    await persistCollection();
+    writeLocalCollection(cachedRecipes);
+
+    if (isCloudWritable()) {
+      await db.collection('recipes').doc(copy.id).set(copy);
+    } else {
+      notifyListeners();
+    }
+
     return clone(copy);
   }
 
@@ -459,7 +716,18 @@
       cachedRecipes = imported;
     }
 
-    await persistCollection();
+    writeLocalCollection(cachedRecipes);
+
+    if (isCloudWritable()) {
+      const batch = db.batch();
+      imported.forEach((rec) => {
+        batch.set(db.collection('recipes').doc(rec.id), rec);
+      });
+      await batch.commit();
+    } else {
+      notifyListeners();
+    }
+
     return { importedCount: imported.length, recipes: getRecipes() };
   }
 
@@ -505,9 +773,82 @@
       countEl.textContent = String(cachedRecipes.length);
     }
     if (!badgeEl) return;
-    badgeEl.className = 'storage-status is-live';
-    badgeEl.innerHTML =
-      '<span class="status-dot" aria-hidden="true"></span><span>Saved locally in this browser &middot; Export JSON anytime</span>';
+
+    if (syncState === 'synced' && currentUser) {
+      badgeEl.className = 'storage-status is-live';
+      badgeEl.innerHTML =
+        `<span class="status-dot" aria-hidden="true"></span><span>Synced to Family Recipe Book (${escapeHtml(currentUser.email)})</span>`;
+    } else if (syncState === 'connecting') {
+      badgeEl.className = 'storage-status is-local';
+      badgeEl.innerHTML =
+        '<span class="status-dot" aria-hidden="true"></span><span>Connecting to Family Recipe Book...</span>';
+    } else if (syncState === 'denied' && currentUser) {
+      badgeEl.className = 'storage-status is-warn';
+      badgeEl.innerHTML =
+        `<span class="status-dot" aria-hidden="true"></span><span>${escapeHtml(currentUser.email)} is not in family allowlist &middot; Saving locally</span>`;
+    } else if (syncState === 'error') {
+      badgeEl.className = 'storage-status is-warn';
+      badgeEl.innerHTML =
+        '<span class="status-dot" aria-hidden="true"></span><span>Firebase unavailable &middot; Saving locally</span>';
+    } else if (firebaseEnabled) {
+      badgeEl.className = 'storage-status is-local';
+      badgeEl.innerHTML =
+        '<span class="status-dot" aria-hidden="true"></span><span>Local browser mode &middot; Sign in to sync family recipes</span>';
+    } else {
+      badgeEl.className = 'storage-status is-local';
+      badgeEl.innerHTML =
+        '<span class="status-dot" aria-hidden="true"></span><span>Local file mode &middot; Open via GitHub Pages for Firebase sync</span>';
+    }
+  }
+
+  function escapeHtml(str) {
+    return String(str || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function renderAuthControls(containerEl) {
+    if (!containerEl) return;
+    if (!firebaseEnabled) {
+      containerEl.innerHTML = '';
+      return;
+    }
+
+    if (currentUser) {
+      const label = currentUser.displayName
+        ? currentUser.displayName.split(' ')[0]
+        : currentUser.email;
+      containerEl.innerHTML = `
+        <span class="auth-user-pill" title="${escapeHtml(currentUser.email)}">${escapeHtml(label)}</span>
+        <button type="button" class="nav-auth-btn" data-action="signout">Sign out</button>
+      `;
+      const btn = containerEl.querySelector('[data-action="signout"]');
+      btn.addEventListener('click', () => {
+        signOut().catch(() => {});
+      });
+    } else {
+      containerEl.innerHTML = `
+        <button type="button" class="nav-auth-btn nav-auth-signin" data-action="signin">
+          <svg class="google-icon" viewBox="0 0 18 18" aria-hidden="true">
+            <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/>
+            <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.33-1.58-5.04-3.71H.96v2.33A9 9 0 0 0 9 18z"/>
+            <path fill="#FBBC05" d="M3.96 10.71A5.41 5.41 0 0 1 3.68 9c0-.59.1-1.17.28-1.71V4.96H.96A9 9 0 0 0 0 9c0 1.45.35 2.82.96 4.04l3-2.33z"/>
+            <path fill="#EA4335" d="M9 3.58c1.32 0 2.51.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.96l3 2.33C4.67 5.16 6.66 3.58 9 3.58z"/>
+          </svg>
+          <span>Sign in</span>
+        </button>
+      `;
+      const btn = containerEl.querySelector('[data-action="signin"]');
+      btn.addEventListener('click', () => {
+        signInWithGoogle().catch((err) => {
+          syncState = 'error';
+          syncMessage = (err && err.message) || 'Sign-in failed.';
+          notifyListeners();
+        });
+      });
+    }
   }
 
   window.SourdoughStore = {
@@ -528,6 +869,11 @@
     buildRecipeSummaryText,
     exportCollectionJson,
     init,
+    onChange,
+    signInWithGoogle,
+    signOut,
+    getUser,
+    getSyncStatus,
     getRecipes,
     getRecipeById,
     saveRecipe,
@@ -537,6 +883,7 @@
     downloadCollectionJson,
     loadDraft,
     saveDraft,
-    renderNavStatus
+    renderNavStatus,
+    renderAuthControls
   };
 })();

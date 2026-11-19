@@ -13,6 +13,7 @@
 
   const dom = {
     navRecipeCount: document.getElementById('navRecipeCount'),
+    authControls: document.getElementById('authControls'),
     storageStatus: document.getElementById('storageStatus'),
     toggleJsonBtn: document.getElementById('toggleJsonBtn'),
     importJsonBtn: document.getElementById('importJsonBtn'),
@@ -299,6 +300,7 @@
   function renderLibrary() {
     const allRecipes = Store.getRecipes();
     Store.renderNavStatus(dom.storageStatus, dom.navRecipeCount);
+    Store.renderAuthControls(dom.authControls);
     updateRawJsonView();
 
     const query = dom.searchInput.value.trim();
@@ -396,6 +398,9 @@
   });
 
   async function boot() {
+    Store.onChange(() => {
+      renderLibrary();
+    });
     await Store.init();
     renderLibrary();
   }

@@ -16,6 +16,7 @@
   // DOM References
   const dom = {
     navRecipeCount: document.getElementById('navRecipeCount'),
+    authControls: document.getElementById('authControls'),
     storageStatus: document.getElementById('storageStatus'),
     openRecipeSelect: document.getElementById('openRecipeSelect'),
     recipeNameInput: document.getElementById('recipeNameInput'),
@@ -69,6 +70,7 @@
   function updateRecipeBarControls() {
     const recipes = Store.getRecipes();
     Store.renderNavStatus(dom.storageStatus, dom.navRecipeCount);
+    Store.renderAuthControls(dom.authControls);
 
     // Populate Open Recipe dropdown
     const previousVal = activeRecipeId || '';
@@ -95,7 +97,9 @@
     dom.openRecipeSelect.value =
       previousVal && recipes.some((r) => r.id === previousVal) ? previousVal : '';
 
-    dom.recipeNameInput.value = recipeName;
+    if (document.activeElement !== dom.recipeNameInput) {
+      dom.recipeNameInput.value = recipeName;
+    }
 
     if (activeRecipeId) {
       dom.saveRecipeBtn.textContent = 'Save Changes';
@@ -522,7 +526,11 @@
       updateRecipeBarControls();
       persistDraft();
 
-      showFeedback(`Saved "${saved.name}".`, 'success');
+      const status = Store.getSyncStatus();
+      const dest = status.isCloudWritable
+        ? 'Family Recipe Book'
+        : 'this browser (sign in to sync)';
+      showFeedback(`Saved "${saved.name}" to ${dest}.`, 'success');
     } catch (err) {
       showFeedback(err.message || 'Could not save recipe.', 'error');
     }
@@ -687,6 +695,13 @@
 
   // Boot
   async function boot() {
+    Store.onChange(() => {
+      if (activeRecipeId && !Store.getRecipeById(activeRecipeId)) {
+        activeRecipeId = null;
+      }
+      updateRecipeBarControls();
+    });
+
     await Store.init();
 
     const params = new URLSearchParams(window.location.search);
