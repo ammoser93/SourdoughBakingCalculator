@@ -1,0 +1,175 @@
+{
+  "version": 1,
+  "updatedAt": "2026-11-19T15:28:36.157Z",
+  "recipes": [
+    {
+      "id": "rec-1795102116157-2c0kx",
+      "name": "Testing",
+      "updatedAt": "2026-11-19T15:28:36.157Z",
+      "totalFlour": 1000,
+      "flours": [
+        {
+          "id": "flour-primary",
+          "name": "Flour",
+          "pct": 100,
+          "isPrimary": true
+        }
+      ],
+      "core": {
+        "water": {
+          "name": "Water",
+          "pct": 60
+        },
+        "salt": {
+          "name": "Salt",
+          "pct": 2
+        },
+        "starter": {
+          "name": "Starter",
+          "pct": 25
+        }
+      },
+      "inclusions": [
+        {
+          "id": "inc-1",
+          "name": "Milk powder",
+          "pct": 0
+        },
+        {
+          "id": "inc-2",
+          "name": "Avocado oil / butter",
+          "pct": 4
+        },
+        {
+          "id": "inc-3",
+          "name": "Honey / maple syrup",
+          "pct": 5
+        }
+      ],
+      "notes": "Oven at 425\nCovered for 45+ minutes"
+    },
+    {
+      "id": "rec-everyday-honey-avocado",
+      "name": "Everyday Honey & Avocado Oil Loaf",
+      "updatedAt": "2026-11-19T15:20:00.000Z",
+      "totalFlour": 1000,
+      "flours": [
+        {
+          "id": "flour-primary",
+          "name": "Flour",
+          "pct": 100,
+          "isPrimary": true
+        }
+      ],
+      "core": {
+        "water": {
+          "name": "Water",
+          "pct": 60
+        },
+        "salt": {
+          "name": "Salt",
+          "pct": 2
+        },
+        "starter": {
+          "name": "Starter",
+          "pct": 25
+        }
+      },
+      "inclusions": [
+        {
+          "id": "inc-1",
+          "name": "Milk powder",
+          "pct": 0
+        },
+        {
+          "id": "inc-2",
+          "name": "Avocado oil / butter",
+          "pct": 4
+        },
+        {
+          "id": "inc-3",
+          "name": "Honey / maple syrup",
+          "pct": 5
+        }
+      ],
+      "notes": "Oven at 425\nCovered for 45+ minutes"
+    },
+    {
+      "id": "rec-sheet-classic",
+      "name": "Classic Honey Sourdough (70% Hydration)",
+      "updatedAt": "2026-11-19T15:19:00.000Z",
+      "totalFlour": 500,
+      "flours": [
+        {
+          "id": "flour-primary",
+          "name": "Flour",
+          "pct": 100,
+          "isPrimary": true
+        }
+      ],
+      "core": {
+        "water": {
+          "name": "Water",
+          "pct": 70
+        },
+        "salt": {
+          "name": "Salt",
+          "pct": 1.8
+        },
+        "starter": {
+          "name": "Starter",
+          "pct": 12
+        }
+      },
+      "inclusions": [
+        {
+          "id": "inc-honey",
+          "name": "Honey",
+          "pct": 5
+        }
+      ],
+      "notes": "10h fridge, 12h counter. 3 stretch and folds, preheated oven, good oven rise."
+    },
+    {
+      "id": "rec-sheet-fluffy",
+      "name": "Fluffy Honey Olive Oil Loaf",
+      "updatedAt": "2026-11-19T15:18:00.000Z",
+      "totalFlour": 500,
+      "flours": [
+        {
+          "id": "flour-primary",
+          "name": "Flour",
+          "pct": 100,
+          "isPrimary": true
+        }
+      ],
+      "core": {
+        "water": {
+          "name": "Water",
+          "pct": 60
+        },
+        "salt": {
+          "name": "Salt",
+          "pct": 2.4
+        },
+        "starter": {
+          "name": "Starter",
+          "pct": 20
+        }
+      },
+      "inclusions": [
+        {
+          "id": "inc-honey",
+          "name": "Honey",
+          "pct": 8
+        },
+        {
+          "id": "inc-oil",
+          "name": "Olive oil",
+          "pct": 4
+        }
+      ],
+      "notes": "10h fridge, 12h counter. Made double, 1 stretch and fold, preheated oven, great oven rise."
+    }
+  ]
+}

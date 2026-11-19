@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calculator · Sourdough Baking Calculator</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png" />
+  <meta name="theme-color" content="#b35633" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Sourdough" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Shared Site Navigation -->
+  <nav class="site-nav" aria-label="Primary navigation">
+    <div class="site-nav-inner">
+      <a href="index.html" class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 20.5C5 13.5 10 8.5 16 8.5C22 8.5 27 13.5 27 20.5C27 22.985 24.985 24.5 22.5 24.5H9.5C7.015 24.5 5 22.985 5 20.5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M11 13.5C12.5 14.5 14 16 15 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M16.5 12C18 13.2 19.3 14.8 20.3 17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <span class="brand-name">Sourdough Calculator</span>
+      </a>
+
+      <div class="nav-links">
+        <a href="index.html" class="nav-link is-active" aria-current="page">Calculator</a>
+        <a href="recipes.html" class="nav-link">
+          Saved Recipes
+          <span class="nav-count" id="navRecipeCount">0</span>
+        </a>
+        <button type="button" id="phoneAccessBtn" class="nav-phone-btn" hidden title="Open on your phone over Wi-Fi">
+          <svg class="btn-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <rect x="6" y="2.5" width="8" height="15" rx="1.8" stroke="currentColor" stroke-width="1.6"/>
+            <circle cx="10" cy="14.6" r="0.8" fill="currentColor"/>
+          </svg>
+          <span>Phone</span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="page">
+    <header class="page-header">
+      <div>
+        <h1>Main Dough Calculator</h1>
+        <div id="storageStatus" class="storage-status"></div>
+      </div>
+
+      <div class="header-actions">
+        <button type="button" id="copyBtn" class="btn btn-secondary" title="Copy recipe summary to clipboard">
+          <svg class="btn-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <rect x="7" y="7" width="9" height="10" rx="1.8" stroke="currentColor" stroke-width="1.6"/>
+            <path d="M13 7V5.3C13 4.306 12.194 3.5 11.2 3.5H5.8C4.806 3.5 4 4.306 4 5.3V12.7C4 13.694 4.806 14.5 5.8 14.5H7" stroke="currentColor" stroke-width="1.6"/>
+          </svg>
+          <span id="copyBtnLabel">Copy</span>
+        </button>
+        <button type="button" id="resetBtn" class="btn btn-ghost" title="Start fresh from default numbers">
+          New / Reset
+        </button>
+      </div>
+    </header>
+
+    <!-- Open & Save Recipe Bar -->
+    <section class="recipe-bar" aria-label="Open and save recipes">
+      <div class="recipe-bar-group recipe-open-group">
+        <label for="openRecipeSelect" class="bar-label">Open Saved Recipe</label>
+        <select id="openRecipeSelect" class="select-input">
+          <option value="">— Choose a saved recipe —</option>
+        </select>
+      </div>
+
+      <div class="recipe-bar-group recipe-save-group">
+        <label for="recipeNameInput" class="bar-label">Recipe Name</label>
+        <div class="save-row">
+          <input
+            type="text"
+            id="recipeNameInput"
+            class="text-input"
+            placeholder="e.g. Weekend Country Loaf"
+            autocomplete="off"
+          />
+          <button type="button" id="saveRecipeBtn" class="btn btn-primary">Save</button>
+          <button type="button" id="saveAsNewBtn" class="btn btn-secondary" hidden title="Save a separate copy with this name">
+            Save as New
+          </button>
+        </div>
+      </div>
+
+      <div id="recipeFeedback" class="bar-feedback" role="status" aria-live="polite" hidden></div>
+    </section>
+
+    <!-- Top Control & Summary Bar -->
+    <section class="hero-card" aria-label="Primary dough parameters">
+      <div class="total-flour-control">
+        <label for="totalFlourInput" class="hero-label">Total Flour</label>
+        <div class="hero-input-row">
+          <div class="unit-input unit-input-lg">
+            <input
+              type="number"
+              id="totalFlourInput"
+              inputmode="decimal"
+              min="0"
+              step="any"
+              aria-label="Total Flour in grams"
+            />
+            <span class="unit-suffix">g</span>
+          </div>
+          <div class="quick-scale" role="group" aria-label="Quick scale total flour">
+            <button type="button" class="chip-btn" data-scale="0.5" title="Halve recipe">&times;&frac12;</button>
+            <button type="button" class="chip-btn" data-scale="2" title="Double recipe">&times;2</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-metrics" aria-label="Dough summary">
+        <div class="metric">
+          <span class="metric-label">Hydration</span>
+          <span class="metric-value" id="metricHydration">60%</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Starter</span>
+          <span class="metric-value" id="metricStarter">25%</span>
+        </div>
+        <div class="metric metric-accent">
+          <span class="metric-label">Total Dough</span>
+          <span class="metric-value" id="metricTotalWeight">1960 g</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Dough Calculator -->
+    <main class="calc-card">
+      <div class="table-head" aria-hidden="true">
+        <span class="col-name">Ingredient</span>
+        <span class="col-pct">Baker's (%)</span>
+        <span class="col-weight">Weight (g)</span>
+        <span class="col-action"></span>
+      </div>
+
+      <!-- Flours Section -->
+      <section class="group" aria-labelledby="floursHeading">
+        <div class="group-header">
+          <div class="group-title-wrap">
+            <h2 id="floursHeading" class="group-title">Flours</h2>
+            <span class="group-pill" id="flourTotalBadge">100%</span>
+          </div>
+          <button type="button" id="addFlourBtn" class="btn-add">
+            <span aria-hidden="true">+</span> Add Flour
+          </button>
+        </div>
+
+        <div id="floursList" class="rows-list"></div>
+
+        <div id="flourWarning" class="inline-warning" role="alert" hidden>
+          Additional flours exceed 100%. Reduce one so total flour stays balanced.
+        </div>
+      </section>
+
+      <!-- Core Dough Ingredients -->
+      <section class="group" aria-labelledby="coreHeading">
+        <div class="group-header">
+          <h2 id="coreHeading" class="group-title">Dough</h2>
+        </div>
+
+        <div id="coreList" class="rows-list"></div>
+      </section>
+
+      <!-- Inclusions Section -->
+      <section class="group" aria-labelledby="inclusionsHeading">
+        <div class="group-header">
+          <h2 id="inclusionsHeading" class="group-title">Inclusions</h2>
+          <button type="button" id="addInclusionBtn" class="btn-add">
+            <span aria-hidden="true">+</span> Add Inclusion
+          </button>
+        </div>
+
+        <div id="inclusionsList" class="rows-list"></div>
+        <p id="inclusionsEmpty" class="empty-hint" hidden>
+          No inclusions added. Click <strong>+ Add Inclusion</strong> for oils, honey, milk powder, seeds, etc.
+        </p>
+      </section>
+
+      <!-- Total Weight Footer (Editable to scale whole recipe) -->
+      <div class="total-row">
+        <div class="col-name total-label-wrap">
+          <span class="total-label">Total Weight</span>
+          <span class="total-hint">Edit to scale recipe</span>
+        </div>
+        <div class="col-pct total-pct-value" id="totalPctDisplay">196%</div>
+        <div class="col-weight">
+          <div class="unit-input unit-input-total">
+            <input
+              type="number"
+              id="totalWeightInput"
+              inputmode="decimal"
+              min="0"
+              step="any"
+              aria-label="Total dough weight in grams"
+            />
+            <span class="unit-suffix">g</span>
+          </div>
+        </div>
+        <div class="col-action"></div>
+      </div>
+    </main>
+
+    <!-- Baking Notes -->
+    <section class="notes-card" aria-labelledby="notesHeading">
+      <label for="notesInput" id="notesHeading" class="notes-label">Baking Notes</label>
+      <textarea
+        id="notesInput"
+        rows="3"
+        placeholder="Oven temperature, baking time, folding schedule..."
+      ></textarea>
+    </section>
+
+    <footer class="app-footer">
+      <span>Edit any <strong>%</strong> or <strong>g</strong> field &middot; Save recipes to <code>recipes/recipes.json</code> and browse them on <a href="recipes.html">Saved Recipes</a>.</span>
+    </footer>
+  </div>
+
+  <script src="qrcode.js"></script>
+  <script src="storage.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
