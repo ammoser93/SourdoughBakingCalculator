@@ -119,6 +119,18 @@
     persistDraft();
   }
 
+  function enableQuickSelect(input) {
+    if (!input || input.readOnly) return;
+    input.addEventListener('focus', () => {
+      input.select();
+      const preventClear = (e) => {
+        e.preventDefault();
+        input.removeEventListener('mouseup', preventClear);
+      };
+      input.addEventListener('mouseup', preventClear, { once: true });
+    });
+  }
+
   // Helpers for building row elements
   function createUnitInput({ value, unit, ariaLabel, readonly = false, dataAttrs = {} }) {
     const wrapper = document.createElement('div');
@@ -134,6 +146,8 @@
     if (readonly) {
       input.readOnly = true;
       input.tabIndex = -1;
+    } else {
+      enableQuickSelect(input);
     }
 
     Object.entries(dataAttrs).forEach(([k, v]) => {
@@ -344,15 +358,22 @@
         ariaLabel: `${item.name} weight in grams`,
         dataAttrs: { role: 'core-weight', id: key }
       });
+      let scaleFromZeroFlour = false;
+      weightControl.input.addEventListener('focus', () => {
+        scaleFromZeroFlour = state.totalFlour === 0 && item.pct > 0;
+      });
       weightControl.input.addEventListener('input', () => {
         const grams = parseInput(weightControl.input.value);
-        if (state.totalFlour > 0) {
+        if (scaleFromZeroFlour) {
+          state.totalFlour = grams / (item.pct / 100);
+        } else if (state.totalFlour > 0) {
           item.pct = (grams / state.totalFlour) * 100;
         }
         syncValues(weightControl.input);
         persistDraft();
       });
       weightControl.input.addEventListener('blur', () => {
+        scaleFromZeroFlour = false;
         syncValues(null);
       });
       weightCol.appendChild(weightControl.wrapper);
@@ -415,15 +436,22 @@
         ariaLabel: `${item.name || 'Inclusion'} weight in grams`,
         dataAttrs: { role: 'inc-weight', id: item.id }
       });
+      let scaleFromZeroFlour = false;
+      weightControl.input.addEventListener('focus', () => {
+        scaleFromZeroFlour = state.totalFlour === 0 && item.pct > 0;
+      });
       weightControl.input.addEventListener('input', () => {
         const grams = parseInput(weightControl.input.value);
-        if (state.totalFlour > 0) {
+        if (scaleFromZeroFlour) {
+          state.totalFlour = grams / (item.pct / 100);
+        } else if (state.totalFlour > 0) {
           item.pct = (grams / state.totalFlour) * 100;
         }
         syncValues(weightControl.input);
         persistDraft();
       });
       weightControl.input.addEventListener('blur', () => {
+        scaleFromZeroFlour = false;
         syncValues(null);
       });
       weightCol.appendChild(weightControl.wrapper);
@@ -456,7 +484,10 @@
       }
     };
 
-    setIfNotSkipped(dom.totalFlourInput, formatGrams(state.totalFlour));
+    setIfNotSkipped(
+      dom.totalFlourInput,
+      state.totalFlour > 0 ? formatGrams(state.totalFlour) : ''
+    );
 
     state.flours.forEach((flour) => {
       const pctInput = dom.floursList.querySelector(
@@ -499,7 +530,10 @@
     dom.flourWarning.hidden = !isOver;
 
     dom.totalPctDisplay.textContent = `${formatPct(metrics.totalPct)}%`;
-    setIfNotSkipped(dom.totalWeightInput, formatGrams(metrics.totalWeight));
+    setIfNotSkipped(
+      dom.totalWeightInput,
+      metrics.totalWeight > 0 ? formatGrams(metrics.totalWeight) : ''
+    );
 
     dom.metricHydration.textContent = `${formatPct(metrics.hydrationPct)}%`;
     dom.metricStarter.textContent = `${formatPct(metrics.starterPct)}%`;
@@ -609,6 +643,9 @@
   dom.saveRecipeBtn.addEventListener('click', () => handleSave(false));
   dom.saveAsNewBtn.addEventListener('click', () => handleSave(true));
 
+  enableQuickSelect(dom.totalFlourInput);
+  enableQuickSelect(dom.totalWeightInput);
+
   dom.totalFlourInput.addEventListener('input', () => {
     state.totalFlour = parseInput(dom.totalFlourInput.value);
     syncValues(dom.totalFlourInput);
@@ -691,6 +728,7 @@
     updateRecipeBarControls();
     persistDraft();
     showFeedback('Started a fresh recipe with default values.', 'info');
+    dom.totalFlourInput.focus();
   });
 
   // Boot
@@ -740,6 +778,9 @@
 
     renderAll();
     updateRecipeBarControls();
+    if (startNew) {
+      dom.totalFlourInput.focus();
+    }
   }
 
   boot();

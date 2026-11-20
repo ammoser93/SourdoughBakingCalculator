@@ -50,21 +50,19 @@
 
   function createDefaultDough() {
     return {
-      totalFlour: 1000,
+      totalFlour: 0,
       flours: [
         { id: 'flour-primary', name: 'Flour', pct: 100, isPrimary: true }
       ],
       core: {
         water: { name: 'Water', pct: 60 },
         salt: { name: 'Salt', pct: 2 },
-        starter: { name: 'Starter', pct: 25 }
+        starter: { name: 'Starter', pct: 10 }
       },
       inclusions: [
-        { id: 'inc-1', name: 'Milk powder', pct: 0 },
-        { id: 'inc-2', name: 'Avocado oil / butter', pct: 4 },
-        { id: 'inc-3', name: 'Honey / maple syrup', pct: 5 }
+        { id: 'inc-honey', name: 'Honey', pct: 5 }
       ],
-      notes: 'Oven at 425\nCovered for 45+ minutes'
+      notes: ''
     };
   }
 
@@ -74,7 +72,21 @@
         id: 'rec-everyday-honey-avocado',
         name: 'Everyday Honey & Avocado Oil Loaf',
         updatedAt: '2026-11-19T15:20:00.000Z',
-        ...createDefaultDough()
+        totalFlour: 1000,
+        flours: [
+          { id: 'flour-primary', name: 'Flour', pct: 100, isPrimary: true }
+        ],
+        core: {
+          water: { name: 'Water', pct: 60 },
+          salt: { name: 'Salt', pct: 2 },
+          starter: { name: 'Starter', pct: 25 }
+        },
+        inclusions: [
+          { id: 'inc-1', name: 'Milk powder', pct: 0 },
+          { id: 'inc-2', name: 'Avocado oil / butter', pct: 4 },
+          { id: 'inc-3', name: 'Honey / maple syrup', pct: 5 }
+        ],
+        notes: 'Oven at 425\nCovered for 45+ minutes'
       },
       {
         id: 'rec-sheet-classic',
